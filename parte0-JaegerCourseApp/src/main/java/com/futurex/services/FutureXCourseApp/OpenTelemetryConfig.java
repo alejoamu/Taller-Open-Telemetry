@@ -18,34 +18,35 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class OpenTelemetryConfig {
 
-    @Value("${spring.application.name}")
-    private String applicationName;
+        @Value("${spring.application.name}")
+        private String applicationName;
 
-    @Value("${otel.exporter.otlp.endpoint:http://localhost:4317}")
-    private String otlpEndpoint;
+        @Value("${otel.exporter.otlp.endpoint:http://localhost:4319}")
+        private String otlpEndpoint;
 
-    @Bean
-    public OpenTelemetry openTelemetry() {
-        Resource resource = Resource.getDefault()
-                .merge(Resource.create(Attributes.of(AttributeKey.stringKey("service.name"), applicationName)));
+        @Bean
+        public OpenTelemetry openTelemetry() {
+                Resource resource = Resource.getDefault()
+                                .merge(Resource.create(Attributes.of(AttributeKey.stringKey("service.name"),
+                                                applicationName)));
 
-        OtlpGrpcSpanExporter spanExporter = OtlpGrpcSpanExporter.builder()
-                .setEndpoint(otlpEndpoint)
-                .build();
+                OtlpGrpcSpanExporter spanExporter = OtlpGrpcSpanExporter.builder()
+                                .setEndpoint(otlpEndpoint)
+                                .build();
 
-        SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder()
-                .addSpanProcessor(BatchSpanProcessor.builder(spanExporter).build())
-                .setResource(resource)
-                .build();
+                SdkTracerProvider sdkTracerProvider = SdkTracerProvider.builder()
+                                .addSpanProcessor(BatchSpanProcessor.builder(spanExporter).build())
+                                .setResource(resource)
+                                .build();
 
-        return OpenTelemetrySdk.builder()
-                .setTracerProvider(sdkTracerProvider)
-                .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
-                .buildAndRegisterGlobal();
-    }
+                return OpenTelemetrySdk.builder()
+                                .setTracerProvider(sdkTracerProvider)
+                                .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
+                                .buildAndRegisterGlobal();
+        }
 
-    @Bean
-    public Tracer tracer(OpenTelemetry openTelemetry) {
-        return openTelemetry.getTracer(applicationName);
-    }
+        @Bean
+        public Tracer tracer(OpenTelemetry openTelemetry) {
+                return openTelemetry.getTracer(applicationName);
+        }
 }

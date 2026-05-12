@@ -2,12 +2,23 @@
 
 Dos microservicios Spring Boot instrumentados con OpenTelemetry usando tres enfoques diferentes.
 
+## Integrantes
+
+- Juan David Calderón
+- Alejandro Amu
+- David Henao
+- Alejandro Torres Soto
+
+## Evidencias
+
+[Capturas-OpenTelemetry.pdf](Capturas-OpenTelemetry.pdf)
+
 ## Servicios
 
-| Servicio | Puerto | Descripción |
-|---|---|---|
-| **FutureXCourseApp** | 8001 | CRUD de cursos con base de datos MySQL |
-| **FutureXCourseCatalog** | 8002 | Catálogo que consulta a CourseApp vía HTTP |
+| Servicio                 | Puerto | Descripción                                |
+| ------------------------ | ------ | ------------------------------------------ |
+| **FutureXCourseApp**     | 8001   | CRUD de cursos con base de datos MySQL     |
+| **FutureXCourseCatalog** | 8002   | Catálogo que consulta a CourseApp vía HTTP |
 
 ## Estructura del proyecto
 
@@ -40,17 +51,21 @@ Taller-Open-Telemetry/
 ### Pasos
 
 **1. Levantar Jaeger**
+
 ```bash
 docker compose up jaeger -d
 ```
+
 > Jaeger UI disponible en: http://localhost:16686
 
 **2. Descargar el agente**
+
 ```bash
 ./download-agent.sh
 ```
 
 **3. Compilar ambas aplicaciones**
+
 ```bash
 cd parte1-JaegerCourseApp && mvn package -DskipTests && cd ..
 cd parte1-JaegerCourseCatalog && mvn package -DskipTests && cd ..
@@ -59,6 +74,7 @@ cd parte1-JaegerCourseCatalog && mvn package -DskipTests && cd ..
 **4. Ejecutar con el agente**
 
 En dos terminales separadas:
+
 ```bash
 # Terminal 1 - CourseApp
 java -javaagent:opentelemetry-javaagent.jar \
@@ -70,12 +86,14 @@ java -javaagent:opentelemetry-javaagent.jar \
 ```
 
 **5. Ejercitar los endpoints**
+
 ```bash
 curl http://localhost:8002/catalog
 curl http://localhost:8002/firstcourse
 ```
 
 **6. Verificar trazas en Jaeger**
+
 - Abrir http://localhost:16686
 - Seleccionar servicio `fx-catalog-service`
 - Las trazas mostrarán spans automáticos de HTTP y JDBC, con propagación distribuida entre servicios
@@ -98,16 +116,19 @@ curl http://localhost:8002/firstcourse
 **1. Configurar endpoint directo a Jaeger**
 
 En ambos `application.properties` (parte0), verificar que el endpoint apunte a Jaeger:
+
 ```properties
 otel.exporter.otlp.endpoint=http://localhost:4317
 ```
 
 **2. Levantar Jaeger**
+
 ```bash
 docker compose up jaeger -d
 ```
 
 **3. Ejecutar las aplicaciones**
+
 ```bash
 # Terminal 1
 cd parte0-JaegerCourseApp && mvn spring-boot:run
@@ -117,6 +138,7 @@ cd part0-JaegerCourseCatalog && mvn spring-boot:run
 ```
 
 **4. Verificar trazas en Jaeger**
+
 - Abrir http://localhost:16686
 - Las trazas de `fx-catalog-service` mostrarán el span de Catalog conectado con los spans de CourseApp en la misma traza distribuida (gracias al interceptor W3C en RestTemplate)
 
@@ -139,19 +161,23 @@ cd part0-JaegerCourseCatalog && mvn spring-boot:run
 ### Pasos
 
 **1. Levantar toda la infraestructura**
+
 ```bash
 docker compose up -d
 ```
+
 > Esto inicia Jaeger (16686, 4317) y el OTel Collector (4319 → 4317)
 
 **2. Verificar el endpoint en application.properties**
 
 Ambos servicios deben apuntar al Collector (puerto 4319):
+
 ```properties
 otel.exporter.otlp.endpoint=http://localhost:4319
 ```
 
 **3. Ejecutar las aplicaciones (mismos archivos que Parte 2)**
+
 ```bash
 # Terminal 1
 cd parte0-JaegerCourseApp && mvn spring-boot:run
@@ -161,6 +187,7 @@ cd part0-JaegerCourseCatalog && mvn spring-boot:run
 ```
 
 **4. Verificar trazas en Jaeger**
+
 - Abrir http://localhost:16686
 - Las trazas llegan a Jaeger habiendo pasado por el Collector
 
@@ -168,20 +195,20 @@ cd part0-JaegerCourseCatalog && mvn spring-boot:run
 
 ## Comparativa de enfoques
 
-| | Parte 1 (Agente) | Parte 2 (API Manual) | Parte 3 (Colector) |
-|---|---|---|---|
-| Cambios de código | Ninguno | Sí (spans, config) | Sí (igual que Parte 2) |
-| Auto-instrumentación | Sí (HTTP, JDBC, etc.) | Solo lo que se codifica | Solo lo que se codifica |
-| Enrutamiento | Apps → Jaeger | Apps → Jaeger | Apps → Collector → Jaeger |
-| Flexibilidad | Baja | Alta | Alta + routing multi-backend |
+|                      | Parte 1 (Agente)      | Parte 2 (API Manual)    | Parte 3 (Colector)           |
+| -------------------- | --------------------- | ----------------------- | ---------------------------- |
+| Cambios de código    | Ninguno               | Sí (spans, config)      | Sí (igual que Parte 2)       |
+| Auto-instrumentación | Sí (HTTP, JDBC, etc.) | Solo lo que se codifica | Solo lo que se codifica      |
+| Enrutamiento         | Apps → Jaeger         | Apps → Jaeger           | Apps → Collector → Jaeger    |
+| Flexibilidad         | Baja                  | Alta                    | Alta + routing multi-backend |
 
 ## Endpoints disponibles
 
-| URL | Descripción |
-|---|---|
-| `GET http://localhost:8001/courses` | Lista todos los cursos |
-| `GET http://localhost:8001/{id}` | Obtiene un curso por ID |
-| `POST http://localhost:8001/courses` | Crea un curso |
-| `GET http://localhost:8002/catalog` | Catálogo (llama a CourseApp) |
-| `GET http://localhost:8002/firstcourse` | Primer curso via Catalog |
-| `http://localhost:16686` | Jaeger UI |
+| URL                                     | Descripción                  |
+| --------------------------------------- | ---------------------------- |
+| `GET http://localhost:8001/courses`     | Lista todos los cursos       |
+| `GET http://localhost:8001/{id}`        | Obtiene un curso por ID      |
+| `POST http://localhost:8001/courses`    | Crea un curso                |
+| `GET http://localhost:8002/catalog`     | Catálogo (llama a CourseApp) |
+| `GET http://localhost:8002/firstcourse` | Primer curso via Catalog     |
+| `http://localhost:16686`                | Jaeger UI                    |
